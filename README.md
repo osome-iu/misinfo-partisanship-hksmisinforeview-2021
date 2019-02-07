@@ -40,7 +40,7 @@ This is a dataset from Facebook, which gives political valence scores to several
 
 ### Misinformation Domains
 
-This is a dataset of manually curated sources of misinformation available at [OpenSources.co](opensources.co). Clone it from Github in your `data` directory.
+This is a dataset of manually curated sources of misinformation available at [OpenSources.co](http://www.opensources.co). Clone it from Github in your `data` directory.
 
 ```
 $ git clone https://github.com/BigMcLargeHuge/opensources.git data/opensources
