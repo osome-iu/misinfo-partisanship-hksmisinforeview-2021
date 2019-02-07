@@ -64,7 +64,7 @@ rule compute_misinfo:
         '{data_dir}/misinfo.tab'.format(**config)
     shell:
         '''
-        python {code_dir}/compute_misinfo_bias.py -c 10 {{input}} {{output}}
+        python {code_dir}/compute_misinfo.py -c 10 {{input}} {{output}}
         '''.format(**config)
 
 rule plot_partisanship_vs_misinfo:
