@@ -48,7 +48,7 @@ $ git clone https://github.com/BigMcLargeHuge/opensources.git data/opensources
 
 ## Set Up Python and Modules
 
-Make sure you have [Python 3](https://www.python.org/) installed on your system. Then, set up a `virtualenv` with the required modules at the root of the clone repository:
+Make sure you have [Python 3](https://www.python.org/) installed on your system. Then, set up a `virtualenv` with the required modules at the root of the cloned repository:
 
 ```
 $ virtualenv -p python3 VENV
@@ -71,7 +71,7 @@ $ cd workflow
 $ snakemake -p
 ```
 
-The execution will display the actual shell commands being executed, so you can run them individually if you want. You can inspect the `workflow/Snakemake` file to see how the inputs and outputs of each script are specified.
+The execution will display the actual shell commands being executed, so you can run them individually if you want. You can inspect the `workflow/Snakemake` file to see how the inputs and outputs for each script are specified. At the end of the execution, the generated plots will be in the `data` directory.
 
 ## Contact
 
