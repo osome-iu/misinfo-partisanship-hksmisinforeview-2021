@@ -2,12 +2,10 @@ configfile: "config.json"
 
 rule all:
     input:
-        '{data_dir}/news-sources.tab'.format(**config),
-        '{data_dir}/misinfo-sources.tab'.format(**config),
-        '{data_dir}/partisanship.tab'.format(**config),
-        '{data_dir}/misinfo.tab'.format(**config),
         '{data_dir}/partisanship-vs-misinfo.pdf'.format(**config)
-
+    shell:
+        'echo "You can find the partisanship vs misinformation plot in {data_dir}/partisanship-vs-misinfo.pdf"'.format(**config)
+        
 rule clean:
     shell:
         '''
@@ -77,5 +75,5 @@ rule plot_partisanship_vs_misinfo:
         '{data_dir}/partisanship-vs-misinfo.pdf'.format(**config)
     shell:
         '''
-        python {code_dir}/plot_misinfo_vs_partisanship.py {{input}} {{output}}
+        python {code_dir}/plot_partisanship_vs_misinfo.py {{input}} {{output}}
         '''.format(**config)
