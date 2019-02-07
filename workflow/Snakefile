@@ -47,7 +47,7 @@ rule create_misinfo_sources:
 
 rule compute_partisanship:
     input:
-        '{data_dir}/domain-shares.json'.format(**config),
+        '{data_dir}/domain-shares.data'.format(**config),
         '{data_dir}/news-sources.tab'.format(**config)
     output:
         '{data_dir}/partisanship.tab'.format(**config)
@@ -58,7 +58,7 @@ rule compute_partisanship:
 
 rule compute_misinfo:
     input:
-        '{data_dir}/domain-shares.json'.format(**config),
+        '{data_dir}/domain-shares.data'.format(**config),
         '{data_dir}/misinfo-sources.tab'.format(**config)
     output:
         '{data_dir}/misinfo.tab'.format(**config)

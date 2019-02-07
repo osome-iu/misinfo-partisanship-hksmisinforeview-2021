@@ -32,7 +32,7 @@ $ mkdir data/
 
 ### Domain Sharing on Twitter
 
-This dataset contains a set of domain sharing actions that occurred on Twitter during the month of June 2017. The dataset is accessible at [Zenodo](https://zenodo.org/record/2558687). Download the `domain-shares.json` file from the link and put it into the `data` directory.
+This dataset contains a set of domain sharing actions that occurred on Twitter during the month of June 2017. The dataset is accessible at [Zenodo](https://zenodo.org/record/2558687#.XFyGfc9Kh24). Download the `domain-shares.data` file from the link and put it into the `data` directory.
 
 ### Political Valence
 
