@@ -1,0 +1,11 @@
+__pycache__
+*.pyc
+*~
+.snakemake
+*.svg
+workflow/snakemake/config.json
+data/top500.csv
+data/opensources
+data/news.tab
+data/misinfo.tab
+VENV
