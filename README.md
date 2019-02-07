@@ -1,5 +1,16 @@
 # The Complex System of Vulnerabilities to Misinformation
 
+* [Introduction](#introduction)
+* [Datasets](#datasets)
+  * [Domain Sharing on Twitter](#domain-sharing-on-twitter)
+  * [Political Valence](#political-valence)
+  * [Misinformation Domains](#misinformation-domains)
+* [Set Up Python and Modules](#set-up-python-and-modules)
+* [Execute Workflow](#execute-workflow)
+* [Contact](#contact)
+
+## Introduction
+
 In this repository, you can find code and instructions for reproducing the plots from *The Complex System of Vulnerabilities to Misinformation* by Filippo Menczer and Dimitar Nikolov.
 
 To start clone this repo:
