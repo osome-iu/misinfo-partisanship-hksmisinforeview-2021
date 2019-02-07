@@ -1,11 +1,8 @@
 __pycache__
+.snakemake
+workflow/snakemake/config.json
+data
+VENV
 *.pyc
 *~
-.snakemake
 *.svg
-workflow/snakemake/config.json
-data/top500.csv
-data/opensources
-data/news.tab
-data/misinfo.tab
-VENV
