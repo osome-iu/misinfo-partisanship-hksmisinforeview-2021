@@ -13,7 +13,7 @@
 
 In this repository, you can find code and instructions for reproducing the plots from *The Complex System of Vulnerabilities to Misinformation* by Filippo Menczer and Dimitar Nikolov.
 
-To start clone this repo:
+To start, clone the repo:
 
 ```
 $ git clone https://github.com/dimitargnikolov/twitter-bias.git
@@ -24,7 +24,7 @@ You should run all subsequent commands from the directory where you clone the re
 
 ## Datasets
 
-There are three datasets you need to obtain. Before you beging, create a `data` directory at the root of the cloned repo.
+There are three datasets you need to obtain. Before you begin, create a `data` directory at the root of the repo.
 
 ```
 $ mkdir data/
@@ -36,7 +36,7 @@ This dataset contains a set of domain sharing actions that occurred on Twitter d
 
 ### Political Valence
 
-This is a dataset from Facebook, which gives political valence scores to several popular news sites (1). You can request access to the dataset from [Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/LDJ7MS). Once you have access, put the `top500.csv` file into the `data` directory.
+This is a [dataset from Facebook](http://science.sciencemag.org/content/348/6239/1130), which gives political valence scores to several popular news sites. You can request access to the dataset from [Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/LDJ7MS). Once you have access, put the `top500.csv` file into the `data` directory.
 
 ### Misinformation Domains
 
