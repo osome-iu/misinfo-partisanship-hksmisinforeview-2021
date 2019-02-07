@@ -3,25 +3,11 @@ import argparse
 import csv
 import logging
 from operator import itemgetter
-from urls import domain
+from utils import domain
 from config import DEBUG_LEVEL
 
 logging.basicConfig(level=DEBUG_LEVEL)
 
-'''
-This list of exceptions was obtained later in the analysis process
-once we could see what the most popular domains were. Except
-whitehouse.gov, all these domains are excluded because they are not
-overtly political, but they generate a lot of traffic, and so without
-them, the size of the tweet dataset is smaller and more
-manageable. whitehouse.gov was removed because its political valence
-seems likely to change depending on whether there is a Democrat or a
-Republican in the White House. This assumptions is not empirically
-verified, but it is better to be safe and exclude it.
-'''
-EXCEPTIONS = frozenset([
-
-])
 
 def read_domain_data(filepath, domain_col, data_cols_to_read, delimiter, skip_rows):
     domains = {}

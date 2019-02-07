@@ -1,89 +1,105 @@
 import os
-import csv
 import logging
-from multiprocessing import Pool
-from utils import readcol, gentweets, write_csv
-from urls import domain
+import csv
+import argparse
+from utils import gen_shares, domain, write_csv
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-def read_polscores(filepath):
-    polscores = {}
+def read_valences(filepath):
+    valences = {}
     with open(filepath, 'r') as f:
         reader = csv.reader(f, delimiter='\t')
         next(reader) # skip header
 
         for row in reader:
-            if row[0].strip().lower() in polscores:
+            if row[0].strip().lower() in valences:
                 logging.debug('Polscore already read for {}'.format(row[0]))
             else:
-                polscores[row[0].strip().lower()] = float(row[1])
-    return polscores
+                valences[row[0].strip().lower()] = float(row[1])
+    return valences
 
 
-def compute_partisanship(filepath, polscores, min_num_tweets):
-    logging.debug('Processing {}, {}, {}'.format(filepath, len(polscores), min_num_tweets))
-
+def compute_partisanship(filepath, valences, min_num_shares):
     total_counts = {}
     news_visits = {}
-    for tweet in gentweets(filepath):
-        uid = tweet['user']['id']
+    for uid, tid, domains in gen_shares(filepath):
         if uid not in total_counts:
             total_counts[uid] = 0
         if uid not in news_visits:
             news_visits[uid] = {}
 
-        if 'entities' in tweet and 'urls' in tweet['entities']:
-            for raw_url in tweet['entities']['urls']:
-                if raw_url['expanded_url'] is not None:
-                    total_counts[uid] += 1
-                    url = domain(raw_url['expanded_url'])
-                    if url in polscores:
-                        if url not in news_visits[uid]:
-                            news_visits[uid][url] = 0
-                        news_visits[uid][url] += 1
+        for d in domains:
+            total_counts[uid] += 1
+            if d in valences:
+                if d not in news_visits[uid]:
+                    news_visits[uid][d] = 0
+                news_visits[uid][d] += 1
 
     scores = {}
     for uid in news_visits:
         total_news = sum(news_visits[uid].values())
         total = total_counts[uid]
 
-        if total_news < min_num_tweets:
+        if total < min_num_shares:
             logging.info('User {} does not have the required minimum number of tweets ({}/{}). Skipping.'.format(
-                uid, total_news, min_num_tweets
+                uid, total_news, min_num_shares
             ))
             continue
         else:
             scores[uid] = 0
-            for url in news_visits[uid]:
-                #scores[uid] += (news_visits[uid][url] / total_news) * polscores[url] # partisanship
-                #scores[uid] += (news_visits[uid][url] / total_news) * abs(polscores[url]) # partisanship-abs
-                #scores[uid] += (news_visits[uid][url] / total) * polscores[url] # partisanship 2
-                scores[uid] += (news_visits[uid][url] / total) * abs(polscores[url]) # partisanship2-abs
+            for d in news_visits[uid]:
+                scores[uid] += (news_visits[uid][d] / total) * valences[d]
+                
     return scores
 
 
-def mapper(args):
-    return compute_partisanship(*args)
-
-
 if __name__ == '__main__':
-    tweets_dir = os.path.join(os.getenv('D'), 'indexed-tweets', 'with-news')
-    dest = os.path.join(os.getenv('D'), 'measures', 'over-all-tweets', 'partisanship2-abs', 'with-news.tab')
+    parser = argparse.ArgumentParser(
+        description=('Compute the partisanship scores for a set of users based on'
+                     'the domains they share.'),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        'domain_shares_file',
+        type=str,
+        help='The path to a JSON file containing domain shares per user per tweet.'
+    )
+    parser.add_argument(
+        'political_valence_file',
+        type=str,
+        help=('The path to a TAB-separated file containing political valences for'
+              'selected domains.')
+    )
+    parser.add_argument(
+        'dest',
+        type=str, 
+        help='Destination file for the partisanship scores.'
+    )
+    parser.add_argument(
+        '-c',
+        '--min_share_count',
+        type=int,
+        default=10,
+        help='The minimum number of domains a user shared to be included in the analysis.'
+    )
+    args = parser.parse_args()
+    
+    if not os.path.exists(args.domain_shares_file) \
+       or not os.path.isfile(args.domain_shares_file) \
+       or not os.path.exists(args.political_valence_file) \
+       or not os.path.isfile(args.political_valence_file):
+        print('Invalid domain shares or political valences input.')
+        exit(1)
 
-    #polscores = frozenset(readcol(os.path.join(os.getenv('D'), 'sources', 'news.tab'), skip_rows=1))
-    polscores = read_polscores(os.path.join(os.getenv('D'), 'sources', 'news.tab'))
-    params = [(os.path.join(tweets_dir, f), polscores, 10) for f in os.listdir(tweets_dir)]
-    print(len(polscores))
+    if args.min_share_count < 0:
+        print('Invalid count: {}'.format(args.min_share_count))
+        exit(1)
+        
+    if not os.path.exists(os.path.dirname(args.dest)):
+        os.makedirs(os.path.dirname(args.dest))
 
-    pool = Pool(processes=10)
-    results = pool.map(mapper, params)
-
-    scores = []
-    for r in results:
-        scores.extend(r.items())
-
-    if not os.path.exists(os.path.dirname(dest)):
-        os.makedirs(os.path.dirname(dest))
-    write_csv(dest, scores, ['Twitter ID', 'Partisanship'])
+    valences = read_valences(args.political_valence_file)
+    partisanships = compute_partisanship(args.domain_shares_file, valences, args.min_share_count)
+    write_csv(args.dest, partisanships.items(), ['Twitter ID', 'Partisanship'])

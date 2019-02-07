@@ -1,0 +1,5 @@
+{
+    'data_dir': '../data',
+    'code_dir': '../scripts',
+    'default_num_threads': 6
+}

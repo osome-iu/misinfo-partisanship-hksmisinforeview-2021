@@ -1,6 +1,7 @@
 import sys
 import os
 import csv
+import argparse
 import matplotlib
 matplotlib.use('Agg')
 
@@ -53,19 +54,51 @@ def read_dataset(filepath):
 
 
 if __name__ == '__main__':
-    base_dir = os.path.join(os.getenv('D'), 'measures', 'over-all-tweets')
-    d1 = read_dataset(os.path.join(base_dir, 'partisanship.tab'))
-    d2 = read_dataset(os.path.join(base_dir, 'misinfo.tab'))
-    dest = os.path.join(os.getenv('D'), 'plots', 'misinfo-vs-partisanship.pdf')
+    parser = argparse.ArgumentParser(
+        description=('Compute the partisanship scores for a set of users based on'
+                     'the domains they share.'),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        'partisanship',
+        type=str,
+        help='The path to a TAB-separated file with partisanship scores.'
+    )
+    parser.add_argument(
+        'misinfo',
+        type=str,
+        help='The path to a TAB-separated file with misinfo scores.'
+    )
+    parser.add_argument(
+        'dest',
+        type=str, 
+        help='Destination PDF for the plot.'
+    )
+    args = parser.parse_args()
+    
+    if not os.path.exists(args.partisanship) \
+       or not os.path.isfile(args.partisanship) \
+       or not os.path.exists(args.misinfo) \
+       or not os.path.isfile(args.misinfo):
+        print('Invalid partisanship or misinfo input.')
+        exit(1)
+        
+    if not os.path.exists(os.path.dirname(args.dest)):
+        os.makedirs(os.path.dirname(args.dest))
+
+    p = read_dataset(args.partisanship)
+    m = read_dataset(args.misinfo)
 
     xlabel = 'Political Bias'
     ylabel = 'Misinformation'
     
     x, y = [], []
-    for uid in d1:
-        if uid in d2:
-            x.append(d1[uid])
-            y.append(d2[uid])
+    for uid in p:
+        if uid in m:
+            x.append(p[uid])
+            y.append(m[uid])
+    print('Dataset length: {}'.format(len(x)))
+
     xleft, yleft, xright, yright = [], [], [], []
     for i in range(len(x)):
         if x[i] < -.1:
@@ -74,13 +107,11 @@ if __name__ == '__main__':
         elif x[i] > .1:
             xright.append(x[i])
             yright.append(y[i])
-    print('Dataset length: {}'.format(len(x)))
-    print('Pearson correlation: {}'.format(pearsonr(x, y)))
-
+            
     if len(xleft) > 0:
         print('Pearson correlation (left): {}'.format(pearsonr(xleft, yleft)))
 
     if len(xright) > 0:
         print('Pearson correlation (right): {}'.format(pearsonr(xright, yright)))
     
-    plot(x, y, dest, xlabel, ylabel)
+    plot(x, y, args.dest, xlabel, ylabel)

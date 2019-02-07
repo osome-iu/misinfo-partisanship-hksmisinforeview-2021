@@ -1,0 +1,81 @@
+configfile: "config.json"
+
+rule all:
+    input:
+        '{data_dir}/news-sources.tab'.format(**config),
+        '{data_dir}/misinfo-sources.tab'.format(**config),
+        '{data_dir}/partisanship.tab'.format(**config),
+        '{data_dir}/misinfo.tab'.format(**config),
+        '{data_dir}/partisanship-vs-misinfo.pdf'.format(**config)
+
+rule clean:
+    shell:
+        '''
+        rm -f {data_dir}/news-sources.tab \
+               {data_dir}/misinfo-sources.tab \
+               {data_dir}/partisanship.tab \
+               {data_dir}/misinfo.tab \
+               {data_dir}/partisanship-vs-misinfo.pdf
+        '''.format(**config)
+
+rule create_news_sources:
+    input:
+        '{data_dir}/top500.csv'.format(**config),
+    output:
+        '{data_dir}/news-sources.tab'.format(**config)
+    shell:
+        '''
+        python {code_dir}/create_domain_list.py {{output}} -p {{input}} \
+        -domain1 0 -data1 1 -delim1 , -skip1 1 \
+        -domain2 0 -data2 1 -delim2 $'\t' -skip2=0 \
+        -dhead domain "political bias" \
+        -ddelim $'\t' \
+        -exclude en.wikipedia.org amazon.com vimeo.com m.youtube.com youtube.com whitehouse.gov twitter.com
+        '''.format(**config)
+
+rule create_misinfo_sources:
+    input:
+        '{data_dir}/opensources/sources/sources.csv'.format(**config),
+    output:
+        '{data_dir}/misinfo-sources.tab'.format(**config)
+    shell:
+        '''
+        python {code_dir}/create_domain_list.py {{output}} -p {{input}} \
+        -domain1 0 -data1 1 2 3 -delim1 , -skip1 1 \
+        -domain2 0 -data2 1 -delim2 $'\t' -skip2=0 \
+        -dhead domain type1 type2 type3 \
+        -ddelim $'\t'
+        '''.format(**config)
+
+rule compute_partisanship:
+    input:
+        '{data_dir}/domain-shares.json'.format(**config),
+        '{data_dir}/news-sources.tab'.format(**config)
+    output:
+        '{data_dir}/partisanship.tab'.format(**config)
+    shell:
+        '''
+        python {code_dir}/compute_partisanship.py -c 10 {{input}} {{output}}
+        '''.format(**config)
+
+rule compute_misinfo:
+    input:
+        '{data_dir}/domain-shares.json'.format(**config),
+        '{data_dir}/misinfo-sources.tab'.format(**config)
+    output:
+        '{data_dir}/misinfo.tab'.format(**config)
+    shell:
+        '''
+        python {code_dir}/compute_misinfo_bias.py -c 10 {{input}} {{output}}
+        '''.format(**config)
+
+rule plot_partisanship_vs_misinfo:
+    input:
+        '{data_dir}/partisanship.tab'.format(**config),
+        '{data_dir}/misinfo.tab'.format(**config)
+    output:
+        '{data_dir}/partisanship-vs-misinfo.pdf'.format(**config)
+    shell:
+        '''
+        python {code_dir}/plot_misinfo_vs_partisanship.py {{input}} {{output}}
+        '''.format(**config)
