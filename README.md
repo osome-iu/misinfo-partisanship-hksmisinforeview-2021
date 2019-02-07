@@ -73,6 +73,15 @@ $ snakemake -p
 
 The execution will display the actual shell commands being executed, so you can run them individually if you want. You can inspect the `workflow/Snakemake` file to see how the inputs and outputs for each script are specified. At the end of the execution, the generated plots will be in the `data` directory.
 
+To regenerate the plots from scratch, you can do:
+
+```
+$ snakemake clean
+$ snakemake -p
+```
+
+from the `workflow` directory.
+
 ## Contact
 
 If you have any questions about running this code or obtaining the data, please open an issue in this repository and we will get back to you as soon as possible.
