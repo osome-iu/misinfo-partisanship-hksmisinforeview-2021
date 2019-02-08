@@ -18,7 +18,6 @@ To start, clone the repo:
 
 ```
 $ git clone https://github.com/dimitargnikolov/twitter-bias.git
-$ cd twitter-bias
 ```
 
 You should run all subsequent commands from the directory where you clone the repo.
@@ -87,16 +86,22 @@ $ cd workflow
 $ snakemake -p
 ```
 
-The execution will display the actual shell commands being executed, so you can run them individually if you want. You can inspect the `workflow/Snakefile` file to see how the inputs and outputs for each script are specified. At the end of the execution, the generated plots will be in the `data` directory.
+The execution will display the actual shell commands being executed, so you can run them individually if you want. You can inspect the `workflow/Snakefile` file to see how the inputs and outputs for each script are specified. In addition, you can execute each script with 
 
-To regenerate the plots from scratch, you can do:
+```
+$ python <script_name.py> --help
+```
+
+to learn about what it does.
+
+At the end of the execution, the generated plots will be in the `data` directory.
+
+To regenerate the plots from scratch, in the `workflow` directory you can do:
 
 ```
 $ snakemake clean
 $ snakemake -p
 ```
-
-from the `workflow` directory.
 
 ## Contact
 
