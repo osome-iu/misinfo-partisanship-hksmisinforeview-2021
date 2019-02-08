@@ -79,7 +79,7 @@ $ source VENV/bin/activate
 
 ## Workflow
 
-The replication code is contained in the `.py` files in the `scripts` directory. You can automate their execution with the provided `Snakemake` file:
+The replication code is contained in the `.py` files in the `scripts` directory. You can automate their execution with the provided [snakemake](https://snakemake.readthedocs.io/en/stable/) workflow:
 
 ```
 $ cd workflow
