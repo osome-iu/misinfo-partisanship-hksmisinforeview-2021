@@ -26,13 +26,9 @@ You should run all subsequent commands from the directory where you clone the re
 
 There are three datasets you need to obtain. Before you begin, create a `data` directory at the root of the repo.
 
-```
-$ mkdir data/
-```
+### Link Sharing on Twitter
 
-### Domain Sharing on Twitter
-
-This dataset contains a set of domain sharing actions that occurred on Twitter during the month of June 2017. The dataset is accessible at [Zenodo](https://zenodo.org/record/2558687#.XFyGfc9Kh24). Download the `domain-shares.data` file from the link and put it into the `data` directory.
+This dataset contains a set of link sharing actions that occurred on Twitter during the month of June 2017. The dataset is accessible at [Zenodo](https://zenodo.org/record/2558687#.XFyGfc9Kh24). Download the `domain-shares.data` file from the link and put it into the `data` directory.
 
 ### Political Valence
 
@@ -46,7 +42,26 @@ This is a dataset of manually curated sources of misinformation available at [Op
 $ git clone https://github.com/BigMcLargeHuge/opensources.git data/opensources
 ```
 
-## Set Up Python and Modules
+### `data` Directory
+
+Once you obtain all data as described above, your `data` directory should look like this:
+
+```
+data
+├── domain-shares.data
+├── opensources
+│   ├── CONTRIBUTING.md
+│   ├── LICENSE
+│   ├── README.md
+│   ├── badges.txt
+│   ├── releasenotes.txt
+│   └── sources
+│       ├── sources.csv
+│       └── sources.json
+└── top500.csv
+```
+
+## Environment
 
 Make sure you have [Python 3](https://www.python.org/) installed on your system. Then, set up a `virtualenv` with the required modules at the root of the cloned repository:
 
@@ -62,7 +77,7 @@ From now on, any time you want to run the analysis, activate your virtual enviro
 $ source VENV/bin/activate
 ```
 
-## Execute Workflow
+## Workflow
 
 The replication code is contained in the `.py` files in the `scripts` directory. You can automate their execution with the provided `Snakemake` file:
 
