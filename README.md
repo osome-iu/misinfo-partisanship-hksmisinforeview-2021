@@ -4,7 +4,7 @@
 * [Datasets](#datasets)
   * [Link Sharing on Twitter](#link-sharing-on-twitter)
   * [Political Valence](#political-valence)
-  * [Misinformation Domains](#misinformation-domains)
+  * [Misinformation](#misinformation)
   * [data Directory](#data-directory)
 * [Environment](#environment)
 * [Workflow](#workflow)
@@ -35,7 +35,7 @@ This dataset contains a set of link sharing actions that occurred on Twitter dur
 
 This is a [dataset from Facebook](http://science.sciencemag.org/content/348/6239/1130), which gives political valence scores to several popular news sites. You can request access to the dataset from [Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/LDJ7MS). Once you have access, put the `top500.csv` file into the `data` directory.
 
-### Misinformation Domains
+### Misinformation
 
 This is a dataset of manually curated sources of misinformation available at [OpenSources.co](http://www.opensources.co). Clone it from Github in your `data` directory.
 
