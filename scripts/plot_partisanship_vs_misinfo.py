@@ -1,3 +1,11 @@
+'''
+plot_partisanship_vs_misinfo.py
+
+Creates a density plot given a set of users with two types of
+scores. Use this script to plot the misinformation and political bias
+scores computed in other parts of the workflow.
+'''
+
 import sys
 import os
 import csv

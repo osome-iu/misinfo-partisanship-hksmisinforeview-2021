@@ -1,3 +1,11 @@
+'''
+compute_partisanship.py
+
+Computes the political bias for a set of users based on the domains
+from which they share. The script relies on an external list of
+misinformation domains, which can be obtained from OpenSources.co.
+
+'''
 import os
 import logging
 import csv

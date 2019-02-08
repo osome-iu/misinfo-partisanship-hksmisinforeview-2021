@@ -1,3 +1,9 @@
+'''
+utils.py
+
+Utility functions used by multiple scripts.
+'''
+
 import os
 import gzip
 import json

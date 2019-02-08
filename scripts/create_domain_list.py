@@ -1,3 +1,12 @@
+'''
+create_domain_list.py
+
+Command-line tool to create a list of domains with standardized
+URLs. The input can be a CSV or manual. This script should be used for
+cleaning up and standardizing the links from the Facebook political
+valence dataset and the OpenSource.co misinformation dataset.
+'''
+
 import os
 import argparse
 import csv
