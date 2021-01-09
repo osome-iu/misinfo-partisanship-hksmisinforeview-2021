@@ -28,7 +28,7 @@ There are three datasets you need to obtain. Before you begin, create a `data` d
 
 ### Link Sharing on Twitter
 
-This dataset contains a set of link sharing actions that occurred on Twitter during the month of June 2017. The dataset is accessible at [Zenodo](https://zenodo.org/record/2558687#.XFyGfc9Kh24). Download the `domain-shares.data` file from the link and put it into the `data` directory.
+This dataset contains a set of link sharing actions that occurred on Twitter during the month of June 2017. The dataset is available on the [Harvard Dataverse](https://doi.org/10.7910/DVN/6CZHH5).
 
 ### Political Valence
 
