@@ -1,4 +1,4 @@
-# The Complex System of Vulnerabilities to Misinformation
+# Right and left, partisanship predicts vulnerability to misinformation
 
 * [Introduction](#introduction)
 * [Datasets](#datasets)
@@ -12,12 +12,12 @@
 	  
 ## Introduction
 
-In this repository, you can find code and instructions for reproducing the plots from *The Complex System of Vulnerabilities to Misinformation* by Filippo Menczer and Dimitar Nikolov.
+In this repository, you can find code and instructions for reproducing the plots from *Right and left, partisanship predicts vulnerability to misinformation* by Dimitar Nikolov, Alessandro Flammini, and Filippo Menczer.
 
 To start, clone the repo:
 
 ```
-$ git clone https://github.com/dimitargnikolov/twitter-bias.git
+$ git clone https://github.com/dimitargnikolov/twitter-misinformation.git
 ```
 
 You should run all subsequent commands from the directory where you clone the repo.

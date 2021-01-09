@@ -1,3 +1,5 @@
-jupyter
+snakemake
 numpy
 matplotlib
+scipy
+

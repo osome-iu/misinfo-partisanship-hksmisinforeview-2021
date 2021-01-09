@@ -1,5 +1,7 @@
 {
-    'data_dir': '../data',
-    'code_dir': '../scripts',
-    'default_num_threads': 6
+    'data_dir': '~/Projects/research/twitter-misinformation/data',
+    'code_dir': '~/Github/dimitargnikolov/twitter-misinformation',
+    'default_num_threads': 6,
+    'index_level': 3,
+    'tweets_to_sample': 10
 }

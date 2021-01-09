@@ -1,79 +1,362 @@
 configfile: "config.json"
 
+DATA_CATS = ['news', 'misinfo', 'factchecking']
+
+'''
+An 'only-' dataset contains only tweets that share a URL from a
+predefined set of domains. For example, in the only-news dataset, we
+are guaranteed that each tweet will have a link to a news site. It's
+possible to encountet non-news links in this dataset if such appear in
+tweets with at least one other link that is to a news site.
+
+A 'with-' dataset contains *all* tweets of users that have been
+previously identified to have shared at least one link from a
+predefined set of domains. For example, in the with-news dataset, we
+are guaranteed that each user will have a link to a news site. But
+this doesn't hold at the individual tweet level.
+'''
+DATASET_TYPES = ['only', 'with']
+
+'''
+Each measure can be computed in three ways:
+
+  a. Over all tweets: Uses the most data but subject to volume bias.
+
+  b. Over a sample of tweets: A sample of config.tweets_to_sample is
+  taken and the measure is computed over that. Can be problematic if a
+  user has orders of magnitude more tweets than the sample size.
+
+  c. Over a partition of a user's tweets: Addresses the issue with the
+  tweet sample, by shuffling a user's tweets and then partitioning the
+  shuffled set into chunks of size config.tweets_to_sample. The
+  measure is the average value over all chunks.
+'''
+DATA_SELECTIONS = ['all-tweets', 'tweets-sample', 'tweets-partition']
+
+'''
+The different types of misinformation as identified by OpenSources, 
+that we are interested in analyzing.
+'''
+MISINFO_TYPES = [
+    'clickbait',
+    'conspiracy',
+    'fake',
+    'junksci',
+    'hate',
+    'bias',
+    'political',
+    'satire',
+    'rumor',
+    'unreliable'
+]
+
 rule all:
     input:
-        '{data_dir}/partisanship-vs-misinfo.pdf'.format(**config)
-    shell:
-        'echo "You can find the partisanship vs misinformation plot in {data_dir}/partisanship-vs-misinfo.pdf"'.format(**config)
-        
+        expand(
+            '{data_dir}/measures/over-{{data_selection}}/hbias/{{dataset_type}}-{{data_cat}}.tab'.format(**config),
+            data_selection=DATA_SELECTIONS,
+            dataset_type=DATASET_TYPES,
+            data_cat=DATA_CATS
+        ),
+        expand(
+            '{data_dir}/measures/over-{{data_selection}}/hbias/{{dataset_type}}-misinfo-{{misinfo_type}}.tab'.format(**config),
+            data_selection=DATA_SELECTIONS,
+            dataset_type=DATASET_TYPES,
+            misinfo_type=MISINFO_TYPES
+        )
+
 rule clean:
     shell:
         '''
-        rm -f {data_dir}/news-sources.tab \
-               {data_dir}/misinfo-sources.tab \
-               {data_dir}/partisanship.tab \
-               {data_dir}/misinfo.tab \
-               {data_dir}/partisanship-vs-misinfo.pdf
+        rm -rf {data_dir}/tweets/clean {data_dir}/tweets/with-* {data_dir}/tweets/only-* \
+               {data_dir}/counts {data_dir}/sources \
+               {data_dir}/indexed-tweets {data_dir}/measures \
+               {data_dir}/plots
         '''.format(**config)
 
+''' 
+Remove links from the dataset to undesired domains such as URL
+shorteners. If in the process a tweet is left without any links, the
+whole tweet is removed.
+'''
+rule clean_tweets:
+    input:
+        '{data_dir}/excluded-domains.tab'.format(**config),
+        '{data_dir}/tweets/raw'.format(**config)
+    output:
+        '{data_dir}/tweets/clean'.format(**config)
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/clean_tweets.py {{threads}} {{input}} {{output}}'.format(**config)
+
+'''
+Count the number of times (NOT just the number of tweets in which)
+each URL that appears in the dataset has been shared. This rule can
+be applied iteratively with the clean_tweets rule to identify more
+domains that are undesirable.
+'''
+rule count_all_links:
+    input:
+        '{data_dir}/tweets/clean'.format(**config)
+    output:
+        '{data_dir}/counts/domain-shares/clean.tab'.format(**config)
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/count_links.py {{threads}} {{input}} {{output}} --transform_fn=domain -hdr Domain "Link Count"'.format(**config)
+
+''' 
+Index the tweets by user. All of a user's tweets should be in the same
+file so they can be loaded easily. The tweets of multiple users can be
+combined in the same file. This is governed by the index_level
+argument which indicates the number of digits at the end of users' ids
+that need to match for their tweets to be put together. For example,
+index_level of 3 indicates that the tweets of 100231 and 1231 will be
+put together because the last 3 digits match. Combining users in this
+way ensures that not too many files are created, while still being
+able to load into memory the file containing a user's tweets.
+'''
+rule index_all_tweets:
+    input:
+        '{data_dir}/tweets/clean'.format(**config)
+    output:
+        '{data_dir}/indexed-tweets/clean'.format(**config)
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/index_tweets.py {{threads}} {index_level} {{input}} {{output}}'.format(**config)
+
+'''
+Normalize the domains from the Facebook dataset of news sources,
+keeping their political scores available in the Facebook, and adding
+the pagerank to each domain it's available for.  
+'''
 rule create_news_sources:
     input:
-        '{data_dir}/top500.csv'.format(**config),
+        news='{data_dir}/top500.csv'.format(**config),
+        prs='{data_dir}/pageranks/part-r-00000'.format(**config)
     output:
-        '{data_dir}/news-sources.tab'.format(**config)
+        '{data_dir}/sources/news.tab'.format(**config)
     shell:
         '''
-        python {code_dir}/create_domain_list.py {{output}} -p {{input}} \
+        python {code_dir}/scripts/create_domain_list.py {{output}} -p {{input.news}} -s {{input.prs}} \
         -domain1 0 -data1 1 -delim1 , -skip1 1 \
         -domain2 0 -data2 1 -delim2 $'\t' -skip2=0 \
-        -dhead domain "political bias" \
+        -dhead domain "political bias" pagerank \
         -ddelim $'\t' \
         -exclude en.wikipedia.org amazon.com vimeo.com m.youtube.com youtube.com whitehouse.gov twitter.com
         '''.format(**config)
 
+'''
+Normalize the domains from the OpenSources dataset of misinformatin
+sources. Look up pagerank where available.
+'''
 rule create_misinfo_sources:
     input:
-        '{data_dir}/opensources/sources/sources.csv'.format(**config),
+        misinfo='{data_dir}/opensources/sources/sources.csv'.format(**config),
+        prs='{data_dir}/pageranks/part-r-00000'.format(**config)
     output:
-        '{data_dir}/misinfo-sources.tab'.format(**config)
+        '{data_dir}/sources/misinfo.tab'.format(**config)
     shell:
         '''
-        python {code_dir}/create_domain_list.py {{output}} -p {{input}} \
+        python {code_dir}/scripts/create_domain_list.py {{output}} -p {{input.misinfo}} -s {{input.prs}} \
         -domain1 0 -data1 1 2 3 -delim1 , -skip1 1 \
         -domain2 0 -data2 1 -delim2 $'\t' -skip2=0 \
-        -dhead domain type1 type2 type3 \
+        -dhead domain type1 type2 type3 pagerank \
         -ddelim $'\t'
         '''.format(**config)
 
-rule compute_partisanship:
+'''
+Normalize the given fact checking domains and look up their pageranks.
+'''
+rule create_factchecking_sources:
     input:
-        '{data_dir}/domain-shares.data'.format(**config),
-        '{data_dir}/news-sources.tab'.format(**config)
+        '{data_dir}/pageranks/part-r-00000'.format(**config)
     output:
-        '{data_dir}/partisanship.tab'.format(**config)
+        '{data_dir}/sources/factchecking.tab'.format(**config)
     shell:
         '''
-        python {code_dir}/compute_partisanship.py -c 10 {{input}} {{output}}
+        python {code_dir}/scripts/create_domain_list.py {{output}} -s {{input}} \
+        -domain2 0 -data2 1 -delim2 $'\t' -skip2=0 \
+        -dhead domain pagerank \
+        -ddelim $'\t' \
+        -include Snopes.com PolitiFact.com FactCheck.org OpenSecrets.org TruthOrFiction.com HoaxSlayer.com
         '''.format(**config)
 
-rule compute_misinfo:
+'''
+From the clean dataset of tweets, create datasets that contain tweets
+only from a list of domains. If a tweet contains multiple links, only
+one of them needs to be from the list of desired domains for the whole
+tweet to be kept. This helps us create a dataset of users who have
+posted links from the domains of interest.
+'''
+rule create_domain_constrained_datasets:
     input:
-        '{data_dir}/domain-shares.data'.format(**config),
-        '{data_dir}/misinfo-sources.tab'.format(**config)
+        tweets='{data_dir}/tweets/clean'.format(**config),
+        domains='{data_dir}/sources/{{data_cat}}.tab'.format(**config),
     output:
-        '{data_dir}/misinfo.tab'.format(**config)
+        '{data_dir}/tweets/only-{{data_cat}}'.format(**config)
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/strip_tweets.py {{threads}} --domains={{input.domains}} {{input.tweets}} {{output}}'.format(**config)
+
+'''
+Create separate datasets for each type of misinformation as labeled in
+the OpenSources dataset.
+'''
+rule expand_misinfo_datasets:
+    input:
+        '{data_dir}/tweets/only-misinfo'.format(**config),
+        '{data_dir}/sources/misinfo.tab'.format(**config)
+    output:
+        '{data_dir}/tweets/only-misinfo-{{misinfo_type}}'.format(**config)
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/expand_misinfo_dataset.py {{threads}} {{input}} {{wildcards.misinfo_type}} {{output}}'.format(**config)
+
+'''
+For the datasets of clean tweets and domain constrained tweets,
+extract the users and calculate how many tweets they produced. For the
+full dataset of clean tweets, this will let us select users with
+enough clicks to compute hbias on. For the domain constrained
+datasets, we will use this data to create user constrained datasets of
+those who have shared at least one link from domains of interest.
+'''
+rule count_tweets:
+    input:
+        '{data_dir}/tweets/{{dataset}}'.format(**config),
+    output:
+        '{data_dir}/counts/user-tweets/{{dataset}}.tab'.format(**config)
+    wildcard_constraints:
+        dataset='(only\-[a-zA-Z]+(\-[a-zA-Z]+)*)|([a-zA-Z]+)'
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/count_tweets.py {{threads}} {{input}} {{output}} -hdr User "Tweet Count"'.format(**config)
+
+'''
+From the user tweet counts for the domain constrained, only-, datasets,
+produce datasets with the tweets of users who have posted at least one
+link from the domains of interest. We are collecting all tweets for
+these users, not just the ones coming from specific domains. But we
+are guaranteed that each user has tweets from the domains of interest.
+'''
+rule create_user_constrained_datasets:
+    input:
+        tweets='{data_dir}/tweets/clean'.format(**config),
+        users='{data_dir}/counts/user-tweets/only-{{data_cat}}.tab'.format(**config)
+    output:
+        '{data_dir}/tweets/with-{{data_cat}}'.format(**config)
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/strip_tweets.py {{threads}} --users={{input.users}} {{input.tweets}} {{output}}'.format(**config)
+
+'''
+Count the number of tweets per user for the newly created
+user-constrained datasets. This will tell us which users we can
+compute bias measures for and how many times to sample their tweets.
+'''
+rule count_tweets_for_user_constrained_datasets:
+    input:
+        '{data_dir}/tweets/with-{{data_cat}}'.format(**config)
+    output:
+        '{data_dir}/counts/user-tweets/with-{{data_cat}}.tab'.format(**config)
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/count_tweets.py {{threads}} {{input}} {{output}} -hdr User "Tweet Count"'.format(**config)
+
+'''
+With both domain- and user-constrained datasets created, index their
+tweets so the tweets of a single user will always be in a single
+way. Exactly the same as what we did with indexing the dataset of all
+clean tweets at the beginning.
+'''
+rule index_datasets:
+    input:
+        '{data_dir}/tweets/{{dataset_type}}-{{data_cat}}'.format(**config)
+    output:
+        '{data_dir}/indexed-tweets/{{dataset_type}}-{{data_cat}}'.format(**config)
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/index_tweets.py {{threads}} {index_level} {{input}} {{output}}'.format(**config)
+
+'''
+Count the number of times links from each domain have been
+shared. Useful for plotting the distribution.
+'''
+rule count_links:
+    input:
+        '{data_dir}/tweets/{{dataset_type}}-{{data_cat}}'.format(**config)
+    output:
+        '{data_dir}/counts/domain-shares/{{dataset_type}}-{{data_cat}}.tab'.format(**config),
+    threads:
+        config['default_num_threads']
+    shell:
+        'python {code_dir}/scripts/count_links.py {{threads}} {{input}} {{output}} --transform_fn=domain -hdr Domain "Link Counts"'.format(**config)
+
+'''
+For each user in the datasets below, compute the homogeneity bias over
+all of their tweets so we can generate a volume vs measure
+plot. Datasets:
+  
+  a. with-misinfo
+  b. with-news
+  c. with-factchecking
+'''
+rule compute_hbias_over_all_tweets:
+    input:
+        '{data_dir}/indexed-tweets/{{dataset}}'.format(**config),
+        '{data_dir}/counts/domain-shares/{{dataset}}.tab'.format(**config)
+    output:
+        '{data_dir}/measures/over-all-tweets/hbias/{{dataset}}.tab'.format(**config)
+    wildcard_constraints:
+        dataset='(with\-[a-zA-Z\-]+)|(only\-[a-zA-Z\-]+)'
+    threads:
+        config['default_num_threads']
     shell:
         '''
-        python {code_dir}/compute_misinfo.py -c 10 {{input}} {{output}}
+        python {code_dir}/scripts/compute_hbias.py {{threads}} {{input}} {{output}} \
+               --min_num_tweets={tweets_to_sample}
         '''.format(**config)
 
-rule plot_partisanship_vs_misinfo:
+'''
+'''
+rule compute_hbias_over_tweets_sample:
     input:
-        '{data_dir}/partisanship.tab'.format(**config),
-        '{data_dir}/misinfo.tab'.format(**config)
+        '{data_dir}/indexed-tweets/{{dataset}}'.format(**config),
+        '{data_dir}/counts/domain-shares/{{dataset}}.tab'.format(**config)
     output:
-        '{data_dir}/partisanship-vs-misinfo.pdf'.format(**config)
+        '{data_dir}/measures/over-tweets-sample/hbias/{{dataset}}.tab'.format(**config)
+    wildcard_constraints:
+        dataset='(with\-[a-zA-Z\-]+)|(only\-[a-zA-Z\-]+)'
+    threads:
+        config['default_num_threads']
     shell:
         '''
-        python {code_dir}/plot_partisanship_vs_misinfo.py {{input}} {{output}}
+        python {code_dir}/scripts/compute_hbias.py {{threads}} {{input}} {{output}} \
+               --num_tweets={tweets_to_sample}
+        '''.format(**config)
+
+'''
+'''
+rule compute_hbias_over_tweets_partition:
+    input:
+        '{data_dir}/indexed-tweets/{{dataset}}'.format(**config),
+        '{data_dir}/counts/domain-shares/{{dataset}}.tab'.format(**config)
+    output:
+        '{data_dir}/measures/over-tweets-partition/hbias/{{dataset}}.tab'.format(**config)
+    wildcard_constraints:
+        dataset='(with\-[a-zA-Z\-]+)|(only\-[a-zA-Z\-]+)'
+    threads:
+        config['default_num_threads']
+    shell:
+        '''
+        python {code_dir}/scripts/compute_hbias.py {{threads}} {{input}} {{output}} \
+               --num_tweets={tweets_to_sample} --use_partition
         '''.format(**config)
