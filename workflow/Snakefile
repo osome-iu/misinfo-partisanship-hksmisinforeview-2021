@@ -134,16 +134,14 @@ the pagerank to each domain it's available for.
 '''
 rule create_news_sources:
     input:
-        news='{data_dir}/top500.csv'.format(**config),
-        prs='{data_dir}/pageranks/part-r-00000'.format(**config)
+        news='{data_dir}/top500.csv'.format(**config)
     output:
         '{data_dir}/sources/news.tab'.format(**config)
     shell:
         '''
-        python {code_dir}/scripts/create_domain_list.py {{output}} -p {{input.news}} -s {{input.prs}} \
+        python {code_dir}/scripts/create_domain_list.py {{output}} -p {{input.news}} \
         -domain1 0 -data1 1 -delim1 , -skip1 1 \
-        -domain2 0 -data2 1 -delim2 $'\t' -skip2=0 \
-        -dhead domain "political bias" pagerank \
+        -dhead domain "political bias" \
         -ddelim $'\t' \
         -exclude en.wikipedia.org amazon.com vimeo.com m.youtube.com youtube.com whitehouse.gov twitter.com
         '''.format(**config)
@@ -154,16 +152,14 @@ sources. Look up pagerank where available.
 '''
 rule create_misinfo_sources:
     input:
-        misinfo='{data_dir}/opensources/sources/sources.csv'.format(**config),
-        prs='{data_dir}/pageranks/part-r-00000'.format(**config)
+        misinfo='{data_dir}/opensources/sources/sources.csv'.format(**config)
     output:
         '{data_dir}/sources/misinfo.tab'.format(**config)
     shell:
         '''
-        python {code_dir}/scripts/create_domain_list.py {{output}} -p {{input.misinfo}} -s {{input.prs}} \
+        python {code_dir}/scripts/create_domain_list.py {{output}} -p {{input.misinfo}} \
         -domain1 0 -data1 1 2 3 -delim1 , -skip1 1 \
-        -domain2 0 -data2 1 -delim2 $'\t' -skip2=0 \
-        -dhead domain type1 type2 type3 pagerank \
+        -dhead domain type1 type2 type3 \
         -ddelim $'\t'
         '''.format(**config)
 
